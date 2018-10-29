@@ -100,7 +100,7 @@ class CustomDelegate
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
     paths = image_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
     
-    uri = URI(ENV['FEDORA_URL'] + '/' + paths.join('/') + '/' + image_id)
+    uri = URI(ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH'] + '/' + paths.join('/') + '/' + image_id)
     http = Net::HTTP.new(uri.host, uri.port)
 
     request = Net::HTTP::Get.new(uri.request_uri)
