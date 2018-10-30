@@ -5,7 +5,10 @@ require 'java'
 
 ##
 # Delegate script to connect Cantaloupe to Fedora. It slices a piece of
-# Cantaloupe for Samvera to use.
+# Cantaloupe for Samvera to consume.
+#
+# This is a first pass and doesn't have a lot of error checking built in yet.
+# It also assumes a very basic use case of a single image on an item.
 #
 class CustomDelegate
 
@@ -59,8 +62,6 @@ class CustomDelegate
   #         integer from 300 to 399. Return nil for no redirect.
   #
   def redirect(options = {})
-    msg = options.collect { |k, v| "#{k}=#{v}" }.join
-    Java::edu.illinois.library.cantaloupe.script.Logger.info(msg)
     nil
   end
 
@@ -89,6 +90,8 @@ class CustomDelegate
   end
 
   ##
+  # Gets the HTTP-sourced image resource information.
+  #
   # @param options [Hash] Empty hash.
   # @return [String,Hash<String,String>,nil] String URI; Hash with `uri` key,
   #         and optionally `username` and `secret` keys; or nil if not found.
@@ -101,6 +104,10 @@ class CustomDelegate
   end
 
   ##
+  # Gets the downloadable image URL from Fedora. Assumes Fedora environment
+  # variables in the form of FEDORA_URL="http://localhost:8984/fcrepo/rest"
+  # and FEDORA_BASE_PATH="/prod" are set.
+  #
   # @param image_id [String] Image ID
   # @return [String] String with the Fedora URL for the image file or nil if not found
   #
@@ -108,7 +115,8 @@ class CustomDelegate
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
     paths = image_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
     
-    uri = URI(ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH'] + '/' + paths.join('/') + '/' + image_id)
+    fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
+    uri = URI(fedora_base_url + '/' + paths.join('/') + '/' + image_id)
     http = Net::HTTP.new(uri.host, uri.port)
 
     request = Net::HTTP::Get.new(uri.request_uri)
@@ -119,8 +127,10 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       file_id = result.first['http://pcdm.org/models#hasFile']
-      logMsg = "File URL: " + file_id.first['@id'] + " (from Fedora)"
-      Java::edu.illinois.library.cantaloupe.script.Logger.debug(logMsg)
+
+      log_msg = "Image URL: " + file_id.first['@id'] + " (from Fedora)"
+      Java::edu.illinois.library.cantaloupe.script.Logger.debug log_msg
+
       return file_id.first['@id']
     else
       return nil
@@ -128,9 +138,8 @@ class CustomDelegate
   end
 
   ##
-  # Gets the image ID for the item in hand. The SOLR_URL, passed in
-  # through the environment, should be in the form
-  # 'http://localhost:8983/solr/californica' (i.e., including the core name)
+  # Gets the image ID for the item in hand. The Solr URL is passed in through
+  # the environment (e.g, SOLR_URL="http://localhost:8983/solr/californica").
   #
   # @param item_id [String] The item ID
   #
@@ -147,8 +156,10 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       item_id = result['response']['docs'][0]['hasRelatedImage_ssim'][0]
-      logMsg = 'Image ID: ' + item_id + ' (from Solr)'
-      Java::edu.illinois.library.cantaloupe.script.Logger.debug(logMsg)
+
+      log_msg = 'Image ID: ' + item_id + ' (from Solr)'
+      Java::edu.illinois.library.cantaloupe.script.Logger.debug log_msg
+
       return item_id
     else
       return nil
