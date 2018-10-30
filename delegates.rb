@@ -1,12 +1,15 @@
 require 'net/http'
 require 'uri'
 require 'json'
+require 'java'
 
 ##
 # Delegate script to connect Cantaloupe to Fedora. It slices a piece of
 # Cantaloupe for Samvera to use.
 #
 class CustomDelegate
+
+  logger = Java::edu.illinois.library.cantaloupe.script.Logger
 
   ##
   # Attribute for the request context, which is a hash containing information
@@ -49,18 +52,6 @@ class CustomDelegate
   attr_accessor :context
 
   ##
-  # Tells the server whether to redirect in response to the request. Will be
-  # called upon all image requests.
-  #
-  # @param options [Hash] Empty hash.
-  # @return [Hash<String,Object>,nil] Hash with `location` and `status_code`
-  #         keys. `location` must be a URI string; `status_code` must be an
-  #         integer from 300 to 399. Return nil for no redirect.
-  #
-  def redirect(options = {})
-  end
-
-  ##
   # Tells the server whether the given request is authorized. Will be called
   # upon all image requests to any endpoint.
   #
@@ -70,7 +61,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [Boolean] Whether the request is authorized.
   #
-  def authorized?(options = {})
+  def authorize?(options = {})
     true
   end
 
@@ -81,6 +72,7 @@ class CustomDelegate
   # @return [String] Source name.
   #
   def source(options = {})
+    'HttpSource'
   end
 
   ##
@@ -91,9 +83,8 @@ class CustomDelegate
   def httpsource_resource_info(options = {})
     item_id = context['identifier']
     image_id = get_image_id(item_id)
-    file_url = get_file_url(image_id)
 
-    return file_url
+    return { 'uri' => get_file_url(image_id) }
   end
 
   def get_file_url(image_id)
@@ -111,7 +102,7 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       file_id = result.first['http://pcdm.org/models#hasFile']
-      puts "File URL: " + file_id.first['@id'] + " (from Fedora)"
+      logger.debug("File URL: " + file_id.first['@id'] + " (from Fedora)")
       return file_id.first['@id']
     else
       return ''
@@ -138,7 +129,7 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       item_id = result['response']['docs'][0]['hasRelatedImage_ssim'][0]
-      puts "Image ID: " + item_id + " (from Solr)"
+      logger.debug('Image ID: ' + item_id + ' (from Solr)')
       return item_id
     else
       return ''
