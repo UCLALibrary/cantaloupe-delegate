@@ -9,8 +9,6 @@ require 'java'
 #
 class CustomDelegate
 
-  logger = Java::edu.illinois.library.cantaloupe.script.Logger
-
   ##
   # Attribute for the request context, which is a hash containing information
   # about the current request.
@@ -52,6 +50,21 @@ class CustomDelegate
   attr_accessor :context
 
   ##
+  # Tells the server whether to redirect in response to the request. Will be
+  # called upon all image requests.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Hash<String,Object>,nil] Hash with `location` and `status_code`
+  #         keys. `location` must be a URI string; `status_code` must be an
+  #         integer from 300 to 399. Return nil for no redirect.
+  #
+  def redirect(options = {})
+    msg = options.collect { |k, v| "#{k}=#{v}" }.join
+    Java::edu.illinois.library.cantaloupe.script.Logger.info(msg)
+    nil
+  end
+
+  ##
   # Tells the server whether the given request is authorized. Will be called
   # upon all image requests to any endpoint.
   #
@@ -61,7 +74,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [Boolean] Whether the request is authorized.
   #
-  def authorize?(options = {})
+  def authorized?(options = {})
     true
   end
 
@@ -87,6 +100,10 @@ class CustomDelegate
     return { 'uri' => get_file_url(image_id) }
   end
 
+  ##
+  # @param image_id [String] Image ID
+  # @return [String] String with the Fedora URL for the image file or nil if not found
+  #
   def get_file_url(image_id)
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
     paths = image_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
@@ -102,10 +119,11 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       file_id = result.first['http://pcdm.org/models#hasFile']
-      logger.debug("File URL: " + file_id.first['@id'] + " (from Fedora)")
+      logMsg = "File URL: " + file_id.first['@id'] + " (from Fedora)"
+      Java::edu.illinois.library.cantaloupe.script.Logger.debug(logMsg)
       return file_id.first['@id']
     else
-      return ''
+      return nil
     end
   end
 
@@ -129,10 +147,11 @@ class CustomDelegate
     if response.code == "200"
       result = JSON.parse(response.body)
       item_id = result['response']['docs'][0]['hasRelatedImage_ssim'][0]
-      logger.debug('Image ID: ' + item_id + ' (from Solr)')
+      logMsg = 'Image ID: ' + item_id + ' (from Solr)'
+      Java::edu.illinois.library.cantaloupe.script.Logger.debug(logMsg)
       return item_id
     else
-      return ''
+      return nil
     end
   end
 end
