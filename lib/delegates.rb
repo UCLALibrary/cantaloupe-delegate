@@ -97,72 +97,16 @@ class CustomDelegate
   #         and optionally `username` and `secret` keys; or nil if not found.
   #
   def httpsource_resource_info(options = {})
-    item_id = context['identifier']
-    image_id = get_image_id(item_id)
+    file_id = context['identifier']
 
-    return { 'uri' => get_file_url(image_id) }
-  end
-
-  ##
-  # Gets the downloadable image URL from Fedora. Assumes Fedora environment
-  # variables in the form of FEDORA_URL="http://localhost:8984/fcrepo/rest"
-  # and FEDORA_BASE_PATH="/prod" are set.
-  #
-  # @param image_id [String] Image ID
-  # @return [String] String with the Fedora URL for the image file or nil if not found
-  #
-  def get_file_url(image_id)
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
-    paths = image_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
-    
+    paths = file_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
+
     fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
-    uri = URI(fedora_base_url + '/' + paths.join('/') + '/' + image_id)
-    http = Net::HTTP.new(uri.host, uri.port)
+    file_url = fedora_base_url + '/' + paths.join('/') + '/' + file_id
 
-    request = Net::HTTP::Get.new(uri.request_uri)
-    request['User-Agent'] = 'Californica cantaloupe delegate'
-    request['Accept'] = 'application/ld+json'
-    response = http.request(request)
+    #Java::edu.illinois.library.cantaloupe.script.Logger.debug "> " + file_url
 
-    if response.code == "200"
-      result = JSON.parse(response.body)
-      file_id = result.first['http://pcdm.org/models#hasFile']
-
-      log_msg = "Image URL: " + file_id.first['@id'] + " (from Fedora)"
-      Java::edu.illinois.library.cantaloupe.script.Logger.debug log_msg
-
-      return file_id.first['@id']
-    else
-      return nil
-    end
-  end
-
-  ##
-  # Gets the image ID for the item in hand. The Solr URL is passed in through
-  # the environment (e.g, SOLR_URL="http://localhost:8983/solr/californica").
-  #
-  # @param item_id [String] The item ID
-  #
-  def get_image_id(item_id)
-    uri = URI(ENV['SOLR_URL'] + '/select?q=id:' + item_id)
-    http = Net::HTTP.new(uri.host, uri.port)
-    
-    request = Net::HTTP::Get.new(uri.request_uri)
-    request['User-Agent'] = 'Cantaloupe delegate'
-    request['Accept'] = 'application/ld+json'
-    response = http.request(request)
-    contentType = response['content-type']
-
-    if response.code == "200"
-      result = JSON.parse(response.body)
-      item_id = result['response']['docs'][0]['hasRelatedImage_ssim'][0]
-
-      log_msg = 'Image ID: ' + item_id + ' (from Solr)'
-      Java::edu.illinois.library.cantaloupe.script.Logger.debug log_msg
-
-      return item_id
-    else
-      return nil
-    end
+    return file_url
   end
 end
