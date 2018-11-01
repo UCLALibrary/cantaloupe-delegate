@@ -80,6 +80,18 @@ class CustomDelegate
   end
 
   ##
+  # Used to add additional keys to an information JSON response. See the
+  # [Image API specification](http://iiif.io/api/image/2.1/#image-information).
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Hash] Hash that will be merged into an IIIF Image API 2.x
+  #                information response. Return an empty hash to add nothing.
+  #
+  def extra_iiif2_information_response_keys(options = {})
+    {}
+  end
+
+  ##
   # Tells the server which source to use for the given identifier.
   #
   # @param options [Hash] Empty hash.
