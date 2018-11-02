@@ -4,7 +4,7 @@ cache: bundler
 sudo: false
 script:
   - jruby -S bundle install
-  - jruby -S rake
+  - jruby -S bundle exec rake
 jdk:
   - oraclejdk8
 rvm:
