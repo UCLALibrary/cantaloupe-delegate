@@ -1,0 +1,10 @@
+dist: trusty
+language: ruby
+cache: bundler
+sudo: false
+script:
+  - bundle exec rake
+jdk:
+  - oraclejdk8
+rvm:
+  - jruby

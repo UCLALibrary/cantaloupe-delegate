@@ -11,7 +11,6 @@ require 'java'
 # It also assumes a very basic use case of a single image on an item.
 #
 class CustomDelegate
-
   ##
   # Attribute for the request context, which is a hash containing information
   # about the current request.
@@ -61,7 +60,7 @@ class CustomDelegate
   #         keys. `location` must be a URI string; `status_code` must be an
   #         integer from 300 to 399. Return nil for no redirect.
   #
-  def redirect(options = {})
+  def redirect(_options = {})
     nil
   end
 
@@ -75,7 +74,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [Boolean] Whether the request is authorized.
   #
-  def authorized?(options = {})
+  def authorized?(_options = {})
     true
   end
 
@@ -87,7 +86,7 @@ class CustomDelegate
   # @return [Hash] Hash that will be merged into an IIIF Image API 2.x
   #                information response. Return an empty hash to add nothing.
   #
-  def extra_iiif2_information_response_keys(options = {})
+  def extra_iiif2_information_response_keys(_options = {})
     {}
   end
 
@@ -97,7 +96,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(options = {})
+  def source(_options = {})
     'HttpSource'
   end
 
@@ -108,15 +107,14 @@ class CustomDelegate
   # @return [String,Hash<String,String>,nil] String URI; Hash with `uri` key,
   #         and optionally `username` and `secret` keys; or nil if not found.
   #
-  def httpsource_resource_info(options = {})
+  def httpsource_resource_info(_options = {})
     file_id = context['identifier']
 
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
-    paths = file_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
+    paths = file_id.split(/(.{0,2})/).reject!(&:empty?)[0, 4]
 
     fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
-    file_url = fedora_base_url + '/' + paths.join('/') + '/' + file_id
 
-    return file_url
+    fedora_base_url + '/' + paths.join('/') + '/' + file_id
   end
 end
