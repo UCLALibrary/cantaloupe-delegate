@@ -1,17 +1,16 @@
-# cantaloupe-delegate
+# cantaloupe-delegate &nbsp;[![Build Status](https://travis-ci.org/UCLALibrary/cantaloupe-delegate.svg?branch=master)](https://travis-ci.org/UCLALibrary/cantaloupe-delegate)
 
-A delegate script for the Cantaloupe IIIF server.
+A delegate script for the Cantaloupe IIIF server that takes a Hyrax file ID returns a Fedora URL. 
 
 ### Running tests
 
-The Cantaloupe delegate uses JRuby so tests should be run with it:
+The Cantaloupe delegate uses JRuby so tests (the default rake task) should be run with it:
 
-    jruby -S rspec spec/http_resolver_spec.rb
+    jruby -S rake
 
 ### Running Cantaloupe
 
-There are three environmental settings that the delegate needs. The
-can be supplied on the command line:
+While not needed to run the test, to start Cantaloupe with the required delegate environmental variables:
 
     FEDORA_URL="http://localhost:8984/fcrepo/rest" \
       FEDORA_BASE_PATH="/prod" \

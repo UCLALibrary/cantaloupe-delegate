@@ -1,0 +1,11 @@
+dist: trusty
+language: ruby
+cache: bundler
+sudo: false
+script:
+  - jruby -S bundle install
+  - jruby -S bundle exec rake
+jdk:
+  - oraclejdk8
+rvm:
+  - jruby
