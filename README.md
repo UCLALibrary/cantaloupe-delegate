@@ -6,7 +6,8 @@ A delegate script for the Cantaloupe IIIF server that takes a Hyrax file ID retu
 
 The Cantaloupe delegate uses JRuby so tests (the default rake task) should be run with it:
 
-    jruby -S rake
+    jruby -S bundle install
+    jruby -S bundle exec rake
 
 ### Running Cantaloupe
 
