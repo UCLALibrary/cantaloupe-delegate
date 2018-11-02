@@ -3,6 +3,7 @@ language: ruby
 cache: bundler
 sudo: false
 script:
+  - jruby -S bundle install
   - jruby -S rake
 jdk:
   - oraclejdk8
