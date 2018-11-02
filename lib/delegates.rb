@@ -2,7 +2,6 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'java'
-require "cgi"
 
 ##
 # Delegate script to connect Cantaloupe to Fedora. It slices a piece of
@@ -110,7 +109,7 @@ class CustomDelegate
   #         and optionally `username` and `secret` keys; or nil if not found.
   #
   def httpsource_resource_info(options = {})
-    file_id = CGI.unescape context['identifier']
+    file_id = context['identifier']
 
     # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
     paths = file_id.split(/(.{0,2})/).reject { |c| c.empty? }[0, 4]
