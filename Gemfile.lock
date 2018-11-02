@@ -45,6 +45,8 @@ DEPENDENCIES
   bixby (~> 1.0)
   rake
   rspec
+  rubocop
+  rubocop-rspec
 
 BUNDLED WITH
    1.17.1
