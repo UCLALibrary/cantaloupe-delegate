@@ -75,7 +75,24 @@ class CustomDelegate
   # @return [Boolean] Whether the request is authorized.
   #
   def authorized?(_options = {})
-    true
+    logger = Java::edu.illinois.library.cantaloupe.script.Logger
+    permitted = true
+
+    full_width = context['full_size']['width'].to_f
+    request = context['request_uri'].split('/')
+    region = request[request.length - 4]
+    requested_size = request[request.length - 3]
+    requested_width = requested_size.split(',')[0]
+
+    # A temporary and simplistic (i.e. not foolproof) size restriction
+    if ((region == 'full' && (requested_width == 'full' || requested_width == 'max')) ||
+        requested_width.to_i > (full_width * 0.5).to_i) then
+      # Don't allow image requests that are more than 50% of the original
+      permitted = false
+    end
+
+    logger.debug 'Authorization is granted: ' + permitted.to_s
+    permitted
   end
 
   ##
