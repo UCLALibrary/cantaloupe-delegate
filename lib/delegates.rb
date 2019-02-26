@@ -75,24 +75,13 @@ class CustomDelegate
   # @return [Boolean] Whether the request is authorized.
   #
   def authorized?(_options = {})
-    logger = Java::edu.illinois.library.cantaloupe.script.Logger
-    permitted = true
+    @request = context['request_uri'].split('/')
+    @width = context['full_size']['width'] unless context['full_size'].nil?
 
-    full_width = context['full_size']['width'].to_f
-    request = context['request_uri'].split('/')
-    region = request[request.length - 4]
-    requested_size = request[request.length - 3]
-    requested_width = requested_size.split(',')[0]
+    check_region
+    check_requested_width
 
-    # A temporary and simplistic (i.e. not foolproof) size restriction
-    if ((region == 'full' && (requested_width == 'full' || requested_width == 'max')) ||
-        requested_width.to_i > (full_width * 0.5).to_i) then
-      # Don't allow image requests that are more than 50% of the original
-      permitted = false
-    end
-
-    logger.debug 'Authorization is granted: ' + permitted.to_s
-    permitted
+    !(full? || oversized?)
   end
 
   ##
@@ -133,5 +122,24 @@ class CustomDelegate
     fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
 
     fedora_base_url + '/' + paths.join('/') + '/' + file_id
+  end
+
+  private
+
+  def check_region
+    @region = @request[@request.length - 4]
+  end
+
+  def check_requested_width
+    @requested_width = @request[@request.length - 3].split(',')[0]
+  end
+
+  def full?
+    @region == 'full' && %w[full max].include?(@requested_width)
+  end
+
+  # Don't allow image requests that are more than 50% of the original
+  def oversized?
+    @requested_width.to_i > (@width.to_f * 0.5).to_i
   end
 end
