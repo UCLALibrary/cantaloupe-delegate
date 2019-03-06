@@ -1,2 +1,41 @@
-inherit_gem:
-bixby: bixby_default.yml
+require: rubocop-rspec
+
+LineLength:
+  Max: 120
+
+# See https://github.com/rubocop-hq/rubocop/issues/6410
+Layout/AlignHash:
+  Enabled: false
+
+# Add security checks so Codacy can confirm them
+Security:
+  Enabled: true
+
+Rails/OutputSafety:
+  Enabled: true
+
+Style/MutableConstant:
+  Enabled: true
+
+Metrics/BlockLength:
+  Exclude:
+    - Rakefile
+    - '**/*.rake'
+    - spec/**/*.rb
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Layout/MultilineOperationIndentation:
+  EnforcedStyle: indented
+
+RSpec/ExampleLength:
+  Max: 30
+
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/*'
+
+RSpec/NestedGroups:
+  Exclude:
+    - 'spec/*'

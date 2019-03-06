@@ -75,7 +75,13 @@ class CustomDelegate
   # @return [Boolean] Whether the request is authorized.
   #
   def authorized?(_options = {})
-    true
+    @request = context['request_uri'].split('/')
+    @width = context['full_size']['width'] unless context['full_size'].nil?
+
+    check_region
+    check_requested_width
+
+    !(full? || oversized?)
   end
 
   ##
@@ -116,5 +122,24 @@ class CustomDelegate
     fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
 
     fedora_base_url + '/' + paths.join('/') + '/' + file_id
+  end
+
+  private
+
+  def check_region
+    @region = @request[@request.length - 4]
+  end
+
+  def check_requested_width
+    @requested_width = @request[@request.length - 3].split(',')[0]
+  end
+
+  def full?
+    @region == 'full' && %w[full max].include?(@requested_width)
+  end
+
+  # Don't allow image requests that are more than 50% of the original
+  def oversized?
+    @requested_width.to_i > (@width.to_f * 0.5).to_i
   end
 end
