@@ -142,4 +142,10 @@ class CustomDelegate
   def oversized?
     @requested_width.to_i > (@width.to_f * 0.5).to_i
   end
+
+  def large_pct?
+    if (@requested_width.include? "pct:"
+      puts "a percentage"
+    end
+  end
 end
