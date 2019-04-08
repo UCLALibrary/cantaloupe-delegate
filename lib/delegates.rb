@@ -134,18 +134,18 @@ class CustomDelegate
     @requested_width = @request[@request.length - 3].split(',')[0]
   end
 
+  # Limit full size requests
   def full?
     @region == 'full' && %w[full max].include?(@requested_width)
   end
 
   # Don't allow image requests that are more than 50% of the original
   def oversized?
-    @requested_width.to_i > (@width.to_f * 0.5).to_i
+    over_max_pct? || @requested_width.to_i > (@width.to_f * 0.5).to_i
   end
 
-  def large_pct?
-    if (@requested_width.include? "pct:"
-      puts "a percentage"
-    end
+  # Limit high pct requests for full images (of any region)
+  def over_max_pct?
+    @requested_width.split(':')[1].to_i > 79 if @requested_width.include? 'pct:'
   end
 end
