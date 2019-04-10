@@ -10,17 +10,31 @@ describe CustomDelegate do
     expect(delegate.httpsource_resource_info).to eq(image_url)
   end
 
-  it 'authenticates iiif full request' do
+  it 'authenticates iiif full request as failure' do
     uri = 'http://example.org/iiif/asdfasdf/full/full/0/default.jpg'
     delegate = described_class.new
     delegate.context = { 'request_uri' => uri, 'client_ip' => '127.0.0.1' }
     expect(delegate.authorized?).to be(false)
   end
 
-  it 'authenticates iiif simple request' do
+  it 'authenticates iiif simple request as success' do
     uri = 'http://example.org/iiif/asdfasdf/125,15,120,140/full/0/default.jpg'
     delegate = described_class.new
     delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
     expect(delegate.authorized?).to be(true)
+  end
+
+  it 'authenticates 70 percent request as success' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
+    delegate = described_class.new
+    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
+    expect(delegate.authorized?).to be(true)
+  end
+
+  it 'authenticates 90 percent request as failure' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:90/0/default.jpg'
+    delegate = described_class.new
+    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
+    expect(delegate.authorized?).to be(false)
   end
 end
