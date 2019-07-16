@@ -52,6 +52,38 @@ class CustomDelegate
   attr_accessor :context
 
   ##
+  # Returns authorization status for the current request. Will be called upon
+  # all requests to all public endpoints.
+  #
+  # Implementations should assume that the underlying resource is available,
+  # and not try to check for it.
+  #
+  # Possible return values:
+  #
+  # 1. Boolean true/false, indicating whether the request is fully authorized
+  #    or not. If false, the client will receive a 403 Forbidden response.
+  # 2. Hash with a `status_code` key.
+  #     a. If it corresponds to an integer from 200-299, the request is
+  #        authorized.
+  #     b. If it corresponds to an integer from 300-399:
+  #         i. If the hash also contains a `location` key corresponding to a
+  #            URI string, the request will be redirected to that URI using
+  #            that code.
+  #         ii. If the hash also contains `scale_numerator` and
+  #            `scale_denominator` keys, the request will be
+  #            redirected using that code to a virtual reduced-scale version of
+  #            the source image.
+  #     c. If it corresponds to 401, the hash must include a `challenge` key
+  #        corresponding to a WWW-Authenticate header value.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Boolean,Hash<String,Object>] See above.
+  #
+  def authorize(options = {})
+    authorized?(options)
+  end
+
+  ##
   # Tells the server whether to redirect in response to the request. Will be
   # called upon all image requests.
   #
@@ -103,7 +135,12 @@ class CustomDelegate
   # @return [String] Source name.
   #
   def source(_options = {})
-    'HttpSource'
+    identifier = context['identifier']
+    if identifier.start_with?('Masters/')
+      'FilesystemSource'
+    else
+      'HttpSource'
+    end
   end
 
   ##
