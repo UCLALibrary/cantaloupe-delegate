@@ -2,8 +2,10 @@ dist: trusty
 language: ruby
 cache: bundler
 sudo: false
-script:
+install:
+  - jruby -S gem install bundler -v 2.0.1
   - jruby -S bundle install
+script:
   - jruby -S bundle exec rake
 jdk:
   - oraclejdk8
