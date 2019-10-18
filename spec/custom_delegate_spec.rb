@@ -1,40 +1,48 @@
 require 'java'
 require 'delegates'
+require 'openssl'
+require 'cgi'
 
 describe CustomDelegate do
-  it 'returns image URL from Fedora' do
-    id = '4x51hj00j/files/8891b5b6-8ae4-462d-95fc-f930d519d21b'
-    delegate = described_class.new
-    delegate.context = { 'identifier' => id, 'client_ip' => '127.0.0.1' }
-    image_url = 'http://localhost:8984/fcrepo/rest/prod/4x/51/hj/00/' + id
-    expect(delegate.httpsource_resource_info).to eq(image_url)
-  end
 
-  it 'authenticates iiif full request as failure' do
-    uri = 'http://example.org/iiif/asdfasdf/full/full/0/default.jpg'
-    delegate = described_class.new
-    delegate.context = { 'request_uri' => uri, 'client_ip' => '127.0.0.1' }
-    expect(delegate.authorized?).to be(false)
-  end
+  # we need some fake secrets to test our cookie handling, let's make some
+  todays_date = "today"
+  cipher = OpenSSL::Cipher::AES256.new :CBC
+  cipher.encrypt
+  myIV = cipher.random_iv
+  myEscapedIV = CGI.escapeHTML(myIV)
+  # cipher.key = OpenSSL::Random.random_bytes(32)
+  cipher.key = ENV['CIPHER_KEY']
+  myCipherText = cipher.update("Authenticated #{todays_date}") + cipher.final
+  myEscapedCipherText = CGI.escapeHTML(myCipherText)
 
-  it 'authenticates iiif simple request as success' do
-    uri = 'http://example.org/iiif/asdfasdf/125,15,120,140/full/0/default.jpg'
-    delegate = described_class.new
-    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
-    expect(delegate.authorized?).to be(true)
-  end
-
-  it 'authenticates 70 percent request as success' do
+  it 'fails to authenticate if cookies are not present' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
     delegate = described_class.new
     delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
-    expect(delegate.authorized?).to be(true)
+    expect(delegate.authorize).to eq([false, {"challenge"=>"https://sinai-id.org/users/sign_in", "status_code"=>401}])
   end
 
-  it 'authenticates 90 percent request as failure' do
-    uri = 'http://example.org/iiif/asdfasdf/full/pct:90/0/default.jpg'
+  it 'fails to authenticate if only an irrelevant cookie is passed' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
     delegate = described_class.new
-    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' } }
-    expect(delegate.authorized?).to be(false)
+    #my_hash = { :nested_hash => { :first_key => 'Hello' } }
+    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' }, :cookies => {'nope' => 0 } }
+    expect(delegate.authorize).to eq([false, {"challenge"=>"https://sinai-id.org/users/sign_in", "status_code"=>401}])
   end
+
+  it 'fails if only one of our necessary cookies is passed' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
+    delegate = described_class.new
+    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' }, :cookies => { 'sinai_authenticated' => myEscapedCipherText } }
+    expect(delegate.authorize).to eq([false, {"challenge"=>"https://sinai-id.org/users/sign_in", "status_code"=>401}])
+  end
+
+  it 'passes if we send the necessary cookies with acceptible values' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
+    delegate = described_class.new
+    delegate.context = { 'request_uri' => uri, 'full_size' => { 'width' => '1024', 'height' => '1024' }, :cookies => {'initialization_vector' => myEscapedIV, 'sinai_authenticated' => myEscapedCipherText } }
+    expect(delegate.authorize).to be(true)
+  end
+
 end

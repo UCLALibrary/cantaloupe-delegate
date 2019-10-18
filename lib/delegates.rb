@@ -1,16 +1,21 @@
-require 'net/http'
-require 'uri'
-require 'json'
-require 'java'
-
 ##
-# Delegate script to connect Cantaloupe to Fedora. It slices a piece of
-# Cantaloupe for Samvera to consume.
+# Sample Ruby delegate script containing stubs and documentation for all
+# available delegate methods. See the user manual for more information.
 #
-# This is a first pass and doesn't have a lot of error checking built in yet.
-# It also assumes a very basic use case of a single image on an item.
+# The application will create an instance of this class early in the request
+# cycle and dispose of it at the end of the request cycle. Instances don't need
+# to be thread-safe, but sharing information across instances (requests)
+# **does** need to be done thread-safely.
 #
+# This version of the script works with Cantaloupe version 4, and not earlier
+# versions.
+#
+
+require 'openssl'
+require 'cgi'
+
 class CustomDelegate
+
   ##
   # Attribute for the request context, which is a hash containing information
   # about the current request.
@@ -24,11 +29,17 @@ class CustomDelegate
   #
   # The hash will contain the following keys in response to all requests:
   #
-  # * `client_ip`       [String] Client IP address.
-  # * `cookies`         [Hash<String,String>] Hash of cookie name-value pairs.
-  # * `identifier`      [String] Image identifier.
-  # * `request_headers` [Hash<String,String>] Hash of header name-value pairs.
-  # * `request_uri`     [String] Public request URI.
+  # * `client_ip`        [String] Client IP address.
+  # * `cookies`          [Hash<String,String>] Hash of cookie name-value pairs.
+  # * `identifier`       [String] Image identifier.
+  # * `request_headers`  [Hash<String,String>] Hash of header name-value pairs.
+  # * `request_uri`      [String] URI requested by the client.
+  # * `local_uri`        [String] URI seen by the application, which may be
+  #                      different from `request_uri` when operating behind a
+  #                      reverse-proxy server.
+  # * `scale_constraint` [Array<Integer>] Two-element array with scale
+  #                      constraint numerator at position 0 and denominator at
+  #                      position 1.
   #
   # It will contain the following additional string keys in response to image
   # requests:
@@ -36,6 +47,9 @@ class CustomDelegate
   # * `full_size`      [Hash<String,Integer>] Hash with `width` and `height`
   #                    keys corresponding to the pixel dimensions of the
   #                    source image.
+  # * `metadata`       [Hash<String,Object>] Embedded image metadata. Object
+  #                    structure varies depending on the source image.
+  #                    See the `metadata()` method.
   # * `operations`     [Array<Hash<String,Object>>] Array of operations in
   #                    order of application. Only operations that are not
   #                    no-ops will be included. Every hash contains a `class`
@@ -80,40 +94,47 @@ class CustomDelegate
   # @return [Boolean,Hash<String,Object>] See above.
   #
   def authorize(options = {})
-    authorized?(options)
-  end
 
-  ##
-  # Tells the server whether to redirect in response to the request. Will be
-  # called upon all image requests.
-  #
-  # @param options [Hash] Empty hash.
-  # @return [Hash<String,Object>,nil] Hash with `location` and `status_code`
-  #         keys. `location` must be a URI string; `status_code` must be an
-  #         integer from 300 to 399. Return nil for no redirect.
-  #
-  def redirect(_options = {})
-    nil
-  end
 
-  ##
-  # Tells the server whether the given request is authorized. Will be called
-  # upon all image requests to any endpoint.
-  #
-  # Implementations should assume that the underlying resource is available,
-  # and not try to check for it.
-  #
-  # @param options [Hash] Empty hash.
-  # @return [Boolean] Whether the request is authorized.
-  #
-  def authorized?(_options = {})
-    @request = context['request_uri'].split('/')
-    @width = context['full_size']['width'] unless context['full_size'].nil?
+  # if the required cookies are not present, return a 401 error
+    cookies = context[:cookies]
 
-    check_region
-    check_requested_width
+    # fail fast if the cookies hash is nil (i.e. no cookie at all)
+    if cookies.nil?
+      result = [ false, { 'status_code' => 401, 'challenge' => 'https://sinai-id.org/users/sign_in' } ]
+      return result
+    end
 
-    !(full? || oversized?)
+    # aslo fail fast if we don't have the cookies we need
+    unless cookies.has_key?('initialization_vector') && cookies.has_key?('sinai_authenticated') then
+      result = [ false, { 'status_code' => 401, 'challenge' => 'https://sinai-id.org/users/sign_in' } ]
+        return result
+    end
+
+    # if the salt cookie does not result in a match with the expected key value
+    # return a 400 (bad request) error
+
+    myExpectedText = "Authenticated"
+
+    myIV = CGI.unescapeHTML(cookies['initialization_vector'])
+    # puts "myIV=" + myIV
+
+    myCipherText = CGI.unescapeHTML(cookies['sinai_authenticated'])
+
+    decipher = OpenSSL::Cipher::AES256.new :CBC
+    decipher.decrypt
+    decipher.iv = myIV
+    decipher.key = ENV['CIPHER_KEY']
+    authenticatedDetails = decipher.update(myCipherText)
+    authenticatedDetails << decipher.final
+
+    unless authenticatedDetails[0..12] == myExpectedText
+      result = [ false, { 'status_code' => 400} ]
+        return result
+    end
+
+    # otherwise, everything is cool, proceed
+    return true
   end
 
   ##
@@ -124,7 +145,22 @@ class CustomDelegate
   # @return [Hash] Hash that will be merged into an IIIF Image API 2.x
   #                information response. Return an empty hash to add nothing.
   #
-  def extra_iiif2_information_response_keys(_options = {})
+  def extra_iiif_information_response_keys(options = {})
+=begin
+    Example:
+    {
+        'attribution' =>  'Copyright My Great Organization. All rights '\
+                          'reserved.',
+        'license' =>  'http://example.org/license.html',
+        'logo' =>  'http://example.org/logo.png',
+        'service' => {
+            '@context' => 'http://iiif.io/api/annex/services/physdim/1/context.json',
+            'profile' => 'http://iiif.io/api/annex/services/physdim',
+            'physicalScale' => 0.0025,
+            'physicalUnits' => 'in'
+        }
+    }
+=end
     {}
   end
 
@@ -134,55 +170,181 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(_options = {})
-    identifier = context['identifier']
-    if identifier.start_with?('Masters/')
-      'FilesystemSource'
-    else
-      'HttpSource'
-    end
+  def source(options = {})
   end
 
   ##
-  # Gets the HTTP-sourced image resource information.
+  # N.B.: this method should not try to perform authorization. `authorize()`
+  # should be used instead.
   #
   # @param options [Hash] Empty hash.
-  # @return [String,Hash<String,String>,nil] String URI; Hash with `uri` key,
-  #         and optionally `username` and `secret` keys; or nil if not found.
+  # @return [String,nil] Blob key of the image corresponding to the given
+  #                      identifier, or nil if not found.
   #
-  def httpsource_resource_info(_options = {})
-    file_id = context['identifier']
-
-    # Split the parts into Fedora's pseudo-pairtree (only first four pairs)
-    paths = file_id.split(/(.{0,2})/).reject!(&:empty?)[0, 4]
-
-    fedora_base_url = ENV['FEDORA_URL'] + ENV['FEDORA_BASE_PATH']
-
-    fedora_base_url + '/' + paths.join('/') + '/' + file_id
+  def azurestoragesource_blob_key(options = {})
   end
 
-  private
-
-  def check_region
-    @region = @request[@request.length - 4]
+  ##
+  # N.B.: this method should not try to perform authorization. `authorize()`
+  # should be used instead.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [String,nil] Absolute pathname of the image corresponding to the
+  #                      given identifier, or nil if not found.
+  #
+  def filesystemsource_pathname(options = {})
   end
 
-  def check_requested_width
-    @requested_width = @request[@request.length - 3].split(',')[0]
+  ##
+  # Returns one of the following:
+  #
+  # 1. String URI
+  # 2. Hash with the following keys:
+  #     * `uri` [String] (required)
+  #     * `username` [String] For HTTP Basic authentication (optional).
+  #     * `secret` [String] For HTTP Basic authentication (optional).
+  #     * `headers` [Hash<String,String>] Hash of request headers (optional).
+  # 3. nil if not found.
+  #
+  # N.B.: this method should not try to perform authorization. `authorize()`
+  # should be used instead.
+  #
+  # @param options [Hash] Empty hash.
+  # @return See above.
+  #
+  def httpsource_resource_info(options = {})
   end
 
-  # Limit full size requests
-  def full?
-    @region == 'full' && %w[full max].include?(@requested_width)
+  ##
+  # N.B.: this method should not try to perform authorization. `authorize()`
+  # should be used instead.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [String] Identifier of the image corresponding to the given
+  #                  identifier in the database.
+  #
+  def jdbcsource_database_identifier(options = {})
   end
 
-  # Don't allow image requests that are more than 50% of the original
-  def oversized?
-    over_max_pct? || @requested_width.to_i > (@width.to_f * 0.5).to_i
+  ##
+  # Returns either the media (MIME) type of an image, or an SQL statement that
+  # can be used to retrieve it, if it is stored in the database. In the latter
+  # case, the "SELECT" and "FROM" clauses should be in uppercase in order to
+  # be autodetected. If nil is returned, the media type will be inferred some
+  # other way, such as by identifier extension or magic bytes.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [String, nil]
+  #
+  def jdbcsource_media_type(options = {})
   end
 
-  # Limit high pct requests for full images (of any region)
-  def over_max_pct?
-    @requested_width.split(':')[1].to_i > 79 if @requested_width.include? 'pct:'
+  ##
+  # @param options [Hash] Empty hash.
+  # @return [String] SQL statement that selects the BLOB corresponding to the
+  #                  value returned by `jdbcsource_database_identifier()`.
+  #
+  def jdbcsource_lookup_sql(options = {})
   end
+
+  ##
+  # N.B.: this method should not try to perform authorization. `authorize()`
+  # should be used instead.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Hash<String,Object>,nil] Hash containing `bucket` and `key` keys;
+  #                                   or nil if not found.
+  #
+  def s3source_object_info(options = {})
+  end
+
+  ##
+  # Tells the server what overlay, if any, to apply to an image in response
+  # to a request. Will be called upon all image requests to any endpoint if
+  # overlays are enabled and the overlay strategy is set to `ScriptStrategy`
+  # in the application configuration.
+  #
+  # N.B.: When a string overlay is too large or long to fit entirely within
+  # the image, it won't be drawn. Consider breaking long strings with LFs (\n).
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Hash<String,String>,nil] For image overlays, a hash with `image`,
+  #         `position`, and `inset` keys. For string overlays, a hash with
+  #         `background_color`, `color`, `font`, `font_min_size`, `font_size`,
+  #         `font_weight`, `glyph_spacing`,`inset`, `position`, `string`,
+  #         `stroke_color`, and `stroke_width` keys.
+  #         Return nil for no overlay.
+  #
+  def overlay(options = {})
+  end
+
+  ##
+  # Tells the server what regions of an image to redact in response to a
+  # particular request. Will be called upon all image requests to any endpoint
+  # if redactions are enabled in the application configuration.
+  #
+  # @param options [Hash] Empty hash.
+  # @return [Array<Hash<String,Integer>>] Array of hashes, each with `x`, `y`,
+  #         `width`, and `height` keys; or an empty array if no redactions are
+  #         to be applied.
+  #
+  def redactions(options = {})
+    []
+  end
+
+  ##
+  # Returns XMP metadata to embed in the derivative image.
+  #
+  # Source image metadata is available in the `metadata` context key, and has
+  # the following structure:
+  #
+  # {
+  #     "exif": {
+  #         "tagSet": "Baseline TIFF",
+  #         "fields": {
+  #             "Field1Name": value,
+  #             "Field2Name": value,
+  #             "EXIFIFD": {
+  #                 "tagSet": "EXIF",
+  #                 "fields": {
+  #                     "Field1Name": value,
+  #                     "Field2Name": value
+  #                 }
+  #             }
+  #         }
+  #     },
+  #     "iptc": [
+  #         "Field1Name": value,
+  #         "Field2Name": value
+  #     ],
+  #     "xmp_string": "<rdf:RDF>...</rdf:RDF>",
+  #     "xmp_model": https://jena.apache.org/documentation/javadoc/jena/org/apache/jena/rdf/model/Model.html
+  #     "native": {
+  #         # structure varies
+  #     }
+  # }
+  #
+  # * The `exif` key refers to embedded EXIF data. This also includes IFD0
+  #   metadata from source TIFFs, whether or not an EXIF IFD is present.
+  # * The `iptc` key refers to embedded IPTC IIM data.
+  # * The `xmp_string` key refers to raw embedded XMP data, which may or may
+  #   not contain EXIF and/or IPTC information.
+  # * The `xmp_model` key contains a Jena Model object pre-loaded with the
+  #   contents of `xmp_string`.
+  # * The `native` key refers to format-specific metadata.
+  #
+  # Any combination of the above keys may be present or missing depending on
+  # what is available in a particular source image.
+  #
+  # Only XMP can be embedded in derivative images. See the user manual for
+  # examples of working with the XMP model programmatically.
+  #
+  # @return [String,Model,nil] String or Jena model containing XMP data to
+  #                            embed in the derivative image, or nil to not
+  #                            embed anything.
+  #
+  def metadata(options = {})
+    nil
+  end
+
 end
