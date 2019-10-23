@@ -1,5 +1,8 @@
 ##
-# Sample Ruby delegate script containing stubs and documentation for all
+# Ruby delegate script for Sinai Cantaloupe
+#
+# This script is based on the example delegate script from
+# the Cantaloupe project, containing stubs and documentation for all
 # available delegate methods. See the user manual for more information.
 #
 # The application will create an instance of this class early in the request
@@ -8,14 +11,14 @@
 # **does** need to be done thread-safely.
 #
 # This version of the script works with Cantaloupe version 4, and not earlier
-# versions.
+# versions. It *might* work with Cantaloupe version 5, YMMV
 #
 
 require 'openssl'
 require 'cgi'
 
+# Cantaloupe CustomDelegate method for customized authentication, and more!
 class CustomDelegate
-
   ##
   # Attribute for the request context, which is a hash containing information
   # about the current request.
@@ -93,48 +96,46 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [Boolean,Hash<String,Object>] See above.
   #
-  def authorize(options = {})
-
-
-  # if the required cookies are not present, return a 401 error
+  def authorize(_options = {})
+    challenge_url = 'https://sinai-id.org/users/sign_in'
+    # if the required cookies are not present, return a 401 error
     cookies = context[:cookies]
 
     # fail fast if the cookies hash is nil (i.e. no cookie at all)
     if cookies.nil?
-      result = [ false, { 'status_code' => 401, 'challenge' => 'https://sinai-id.org/users/sign_in' } ]
+      result = [false, { 'status_code' => 401, 'challenge' => challenge_url }]
       return result
     end
 
     # aslo fail fast if we don't have the cookies we need
-    unless cookies.has_key?('initialization_vector') && cookies.has_key?('sinai_authenticated') then
-      result = [ false, { 'status_code' => 401, 'challenge' => 'https://sinai-id.org/users/sign_in' } ]
-        return result
+    unless cookies.key?('initialization_vector') && cookies.key?('sinai_authenticated')
+      result = [false, { 'status_code' => 401, 'challenge' => challenge_url }]
+      return result
     end
 
     # if the salt cookie does not result in a match with the expected key value
     # return a 400 (bad request) error
 
-    myExpectedText = "Authenticated"
+    my_expected_text = 'Authenticated'
 
-    myIV = CGI.unescapeHTML(cookies['initialization_vector'])
-    # puts "myIV=" + myIV
+    my_iv = CGI.unescapeHTML(cookies['initialization_vector'])
 
-    myCipherText = CGI.unescapeHTML(cookies['sinai_authenticated'])
+    my_cipher_text = CGI.unescapeHTML(cookies['sinai_authenticated'])
 
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = myIV
+    decipher.iv = my_iv
     decipher.key = ENV['CIPHER_KEY']
-    authenticatedDetails = decipher.update(myCipherText)
-    authenticatedDetails << decipher.final
+    authenticated_details = decipher.update(my_cipher_text)
+    authenticated_details << decipher.final
 
-    unless authenticatedDetails[0..12] == myExpectedText
-      result = [ false, { 'status_code' => 400} ]
-        return result
+    unless authenticated_details[0..12] == my_expected_text
+      result = [false, { 'status_code' => 400 }]
+      return result
     end
 
     # otherwise, everything is cool, proceed
-    return true
+    true
   end
 
   ##
@@ -145,22 +146,20 @@ class CustomDelegate
   # @return [Hash] Hash that will be merged into an IIIF Image API 2.x
   #                information response. Return an empty hash to add nothing.
   #
-  def extra_iiif_information_response_keys(options = {})
-=begin
-    Example:
-    {
-        'attribution' =>  'Copyright My Great Organization. All rights '\
-                          'reserved.',
-        'license' =>  'http://example.org/license.html',
-        'logo' =>  'http://example.org/logo.png',
-        'service' => {
-            '@context' => 'http://iiif.io/api/annex/services/physdim/1/context.json',
-            'profile' => 'http://iiif.io/api/annex/services/physdim',
-            'physicalScale' => 0.0025,
-            'physicalUnits' => 'in'
-        }
-    }
-=end
+  def extra_iiif_information_response_keys(_options = {})
+    #     Example:
+    #     {
+    #         'attribution' =>  'Copyright My Great Organization. All rights '\
+    #                           'reserved.',
+    #         'license' =>  'http://example.org/license.html',
+    #         'logo' =>  'http://example.org/logo.png',
+    #         'service' => {
+    #             '@context' => 'http://iiif.io/api/annex/services/physdim/1/context.json',
+    #             'profile' => 'http://iiif.io/api/annex/services/physdim',
+    #             'physicalScale' => 0.0025,
+    #             'physicalUnits' => 'in'
+    #         }
+    #     }
     {}
   end
 
@@ -170,8 +169,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(options = {})
-  end
+  def source(options = {}); end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
@@ -181,8 +179,7 @@ class CustomDelegate
   # @return [String,nil] Blob key of the image corresponding to the given
   #                      identifier, or nil if not found.
   #
-  def azurestoragesource_blob_key(options = {})
-  end
+  def azurestoragesource_blob_key(options = {}); end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
@@ -192,8 +189,7 @@ class CustomDelegate
   # @return [String,nil] Absolute pathname of the image corresponding to the
   #                      given identifier, or nil if not found.
   #
-  def filesystemsource_pathname(options = {})
-  end
+  def filesystemsource_pathname(options = {}); end
 
   ##
   # Returns one of the following:
@@ -212,8 +208,7 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return See above.
   #
-  def httpsource_resource_info(options = {})
-  end
+  def httpsource_resource_info(options = {}); end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
@@ -223,8 +218,7 @@ class CustomDelegate
   # @return [String] Identifier of the image corresponding to the given
   #                  identifier in the database.
   #
-  def jdbcsource_database_identifier(options = {})
-  end
+  def jdbcsource_database_identifier(options = {}); end
 
   ##
   # Returns either the media (MIME) type of an image, or an SQL statement that
@@ -236,16 +230,14 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String, nil]
   #
-  def jdbcsource_media_type(options = {})
-  end
+  def jdbcsource_media_type(options = {}); end
 
   ##
   # @param options [Hash] Empty hash.
   # @return [String] SQL statement that selects the BLOB corresponding to the
   #                  value returned by `jdbcsource_database_identifier()`.
   #
-  def jdbcsource_lookup_sql(options = {})
-  end
+  def jdbcsource_lookup_sql(options = {}); end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
@@ -255,8 +247,7 @@ class CustomDelegate
   # @return [Hash<String,Object>,nil] Hash containing `bucket` and `key` keys;
   #                                   or nil if not found.
   #
-  def s3source_object_info(options = {})
-  end
+  def s3source_object_info(options = {}); end
 
   ##
   # Tells the server what overlay, if any, to apply to an image in response
@@ -275,8 +266,7 @@ class CustomDelegate
   #         `stroke_color`, and `stroke_width` keys.
   #         Return nil for no overlay.
   #
-  def overlay(options = {})
-  end
+  def overlay(options = {}); end
 
   ##
   # Tells the server what regions of an image to redact in response to a
@@ -288,7 +278,7 @@ class CustomDelegate
   #         `width`, and `height` keys; or an empty array if no redactions are
   #         to be applied.
   #
-  def redactions(options = {})
+  def redactions(_options = {})
     []
   end
 
@@ -343,8 +333,7 @@ class CustomDelegate
   #                            embed in the derivative image, or nil to not
   #                            embed anything.
   #
-  def metadata(options = {})
+  def metadata(_options = {})
     nil
   end
-
 end
