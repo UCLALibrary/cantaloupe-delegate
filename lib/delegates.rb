@@ -97,45 +97,41 @@ class CustomDelegate
   # @return [Boolean,Hash<String,Object>] See above.
   #
   def authorize(_options = {})
-    challenge_url = 'https://sinai-id.org/users/sign_in'
+    @challenge_url = 'https://sinai-id.org/users/sign_in'
     # if the required cookies are not present, return a 401 error
-    cookies = context[:cookies]
+    @cookies = context[:cookies]
+    my_expected_text = 'Authenticated'
+    @result401 = [false, { 'status_code' => 401, 'challenge' => @challenge_url }]
+    @result400 = [false, { 'status_code' => 400 }]
 
     # fail fast if the cookies hash is nil (i.e. no cookie at all)
-    if cookies.nil?
-      result = [false, { 'status_code' => 401, 'challenge' => challenge_url }]
-      return result
-    end
+    return @result401 if @cookies.nil?
 
     # aslo fail fast if we don't have the cookies we need
-    unless cookies.key?('initialization_vector') && cookies.key?('sinai_authenticated')
-      result = [false, { 'status_code' => 401, 'challenge' => challenge_url }]
-      return result
-    end
+    return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
 
-    # if the salt cookie does not result in a match with the expected key value
-    # return a 400 (bad request) error
+    # grab the authenticated_details using the cookies
+    check_authenticated_details
 
-    my_expected_text = 'Authenticated'
+    return @result400 unless @authenticated_details[0..12] == my_expected_text
 
-    my_iv = CGI.unescapeHTML(cookies['initialization_vector'])
+    # otherwise, everything is cool, proceed
+    true
+  end
 
-    my_cipher_text = CGI.unescapeHTML(cookies['sinai_authenticated'])
+  def check_authenticated_details
+    # decrypt our cookies
+
+    my_iv = CGI.unescapeHTML(@cookies['initialization_vector'])
+
+    my_cipher_text = CGI.unescapeHTML(@cookies['sinai_authenticated'])
 
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
     decipher.iv = my_iv
     decipher.key = ENV['CIPHER_KEY']
-    authenticated_details = decipher.update(my_cipher_text)
-    authenticated_details << decipher.final
-
-    unless authenticated_details[0..12] == my_expected_text
-      result = [false, { 'status_code' => 400 }]
-      return result
-    end
-
-    # otherwise, everything is cool, proceed
-    true
+    @authenticated_details = decipher.update(my_cipher_text)
+    @authenticated_details << decipher.final
   end
 
   ##
