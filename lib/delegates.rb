@@ -107,7 +107,7 @@ class CustomDelegate
     # fail fast if the cookies hash is nil (i.e. no cookie at all)
     return @result401 if @cookies.nil?
 
-    # aslo fail fast if we don't have the cookies we need
+    # also fail fast if we don't have the cookies we need
     return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
 
     # grab the authenticated_details using the cookies
