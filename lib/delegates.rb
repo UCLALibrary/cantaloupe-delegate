@@ -14,8 +14,8 @@
 # versions. It *might* work with Cantaloupe version 5, YMMV
 #
 
-require 'openssl'
 require 'cgi'
+require 'active_support'
 
 # Cantaloupe CustomDelegate method for customized authentication, and more!
 class CustomDelegate
@@ -107,8 +107,8 @@ class CustomDelegate
     # fail fast if the cookies hash is nil (i.e. no cookie at all)
     return @result401 if @cookies.nil?
 
-    # also fail fast if we don't have the cookies we need
-    return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
+    # also fail fast if we don't have the cookie we need
+    return @result401 unless @cookies.key?(ENV['SINAI_COOKIE_NAME'])
 
     # grab the authenticated_details using the cookies
     check_authenticated_details
@@ -120,16 +120,18 @@ class CustomDelegate
   end
 
   def check_authenticated_details
-    # decrypt our cookies
-
-    my_cipher_text = CGI.unescapeHTML(@cookies['sinai_authenticated'])
-
-    decipher = OpenSSL::Cipher::AES256.new :CBC
-    decipher.decrypt
-    decipher.iv = ENV['CIPHER_IV']
-    decipher.key = ENV['CIPHER_KEY']
-    @authenticated_details = decipher.update(my_cipher_text)
-    @authenticated_details << decipher.final
+    # decrypt our cookie
+    secret_key_base         = ENV['SINAI_SECRET_KEY_BASE']
+    salt                    = ENV['SINAI_SALT']
+    my_cookie_name          = ENV['SINAI_COOKIE_NAME']
+    encrypted_cookie_cipher = 'aes-256-gcm'
+    serializer              = ActiveSupport::MessageEncryptor::NullSerializer
+    key_generator           = ActiveSupport::KeyGenerator.new(secret_key_base, iterations: 1000)
+    key_len                 = ActiveSupport::MessageEncryptor.key_len(encrypted_cookie_cipher)
+    secret                  = key_generator.generate_key(salt, key_len)
+    encryptor               = ActiveSupport::MessageEncryptor.new(secret, cipher: encrypted_cookie_cipher, serializer: serializer)
+    my_cipher_text          = CGI.unescapeHTML(@cookies[my_cookie_name])
+    @authenticated_details  = encryptor.decrypt_and_verify(my_cipher_text)
   end
 
   ##

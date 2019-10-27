@@ -1,11 +1,23 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    activesupport (6.0.0)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+      zeitwerk (~> 2.1, >= 2.1.8)
     ast (2.4.0)
     bixby (1.0.0)
       rubocop (~> 0.50, <= 0.52.1)
       rubocop-rspec (~> 1.22, <= 1.22.2)
+    concurrent-ruby (1.1.5)
     diff-lcs (1.3)
+    i18n (1.7.0)
+      concurrent-ruby (~> 1.0)
+    java (0.0.2)
+    minitest (5.12.2)
+    openssl (2.1.2)
     parallel (1.12.1)
     parser (2.5.3.0)
       ast (~> 2.4.0)
@@ -35,14 +47,22 @@ GEM
     rubocop-rspec (1.22.2)
       rubocop (>= 0.52.1)
     ruby-progressbar (1.10.0)
+    thread_safe (0.3.6)
+    thread_safe (0.3.6-java)
+    tzinfo (1.2.5)
+      thread_safe (~> 0.1)
     unicode-display_width (1.4.0)
+    zeitwerk (2.2.0)
 
 PLATFORMS
   java
   ruby
 
 DEPENDENCIES
+  activesupport
   bixby (~> 1.0)
+  java
+  openssl
   rake
   rspec
   rubocop

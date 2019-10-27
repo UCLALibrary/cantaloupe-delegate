@@ -2,18 +2,13 @@ require 'java'
 require 'delegates'
 require 'openssl'
 require 'cgi'
+require 'active_support'
+require 'base64'
 
 describe CustomDelegate do
-  challenge_url = 'https://sinai-id.org/users/sign_in'
-  # we need some fake secrets to test our cookie handling, let's make some
-  todays_date = 'today'
-  cipher = OpenSSL::Cipher::AES256.new :CBC
-  cipher.encrypt
-  my_iv = ENV['CIPHER_IV']
-  # cipher.key = OpenSSL::Random.random_bytes(32)
-  cipher.key = ENV['CIPHER_KEY']
-  my_cipher_text = cipher.update("Authenticated #{todays_date}") + cipher.final
-  my_escaped_cipher_text = CGI.escapeHTML(my_cipher_text)
+  challenge_url          = 'https://sinai-id.org/users/sign_in'
+  my_escaped_cipher_text = ENV['SINAI_TEST_SESSION_COOKIE']
+  my_cookie_name         = ENV['SINAI_COOKIE_NAME']
 
   it 'fails to authenticate if cookies are not present' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
@@ -37,27 +32,27 @@ describe CustomDelegate do
     expect(delegate.authorize).to eq([false, { 'challenge' => challenge_url, 'status_code' => 401 }])
   end
 
-  it 'fails if only one of our necessary cookies is passed' do
+  it 'fails if we send the necessary cookie with a wrong value' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
     delegate = described_class.new
     delegate.context = {
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        'sinai_authenticated' => my_escaped_cipher_text
+        my_cookie_name => Base64.encode64('wrong')
       }
     }
-    expect(delegate.authorize).to eq([false, { 'challenge' => challenge_url, 'status_code' => 401 }])
+    expect(delegate.authorize).to eq([false, { 'status_code' => 400 }])
   end
 
-  it 'passes if we send the necessary cookies with acceptible values' do
+  it 'passes if we send the necessary cookie with an acceptible value' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
     delegate = described_class.new
     delegate.context = {
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        'sinai_authenticated' => my_escaped_cipher_text
+        my_cookie_name => my_escaped_cipher_text
       }
     }
     expect(delegate.authorize).to be(true)
