@@ -121,17 +121,17 @@ class CustomDelegate
 
   def check_authenticated_details
     # decrypt our cookie
-    secret_key_base         = ENV['SINAI_SECRET_KEY_BASE']
-    salt                    = ENV['SINAI_SALT']
-    my_cookie_name          = ENV['SINAI_COOKIE_NAME']
     encrypted_cookie_cipher = 'aes-256-gcm'
-    serializer              = ActiveSupport::MessageEncryptor::NullSerializer
-    key_generator           = ActiveSupport::KeyGenerator.new(secret_key_base, iterations: 1000)
-    key_len                 = ActiveSupport::MessageEncryptor.key_len(encrypted_cookie_cipher)
-    secret                  = key_generator.generate_key(salt, key_len)
-    encryptor               = ActiveSupport::MessageEncryptor.new(secret, cipher: encrypted_cookie_cipher, serializer: serializer)
-    my_cipher_text          = CGI.unescapeHTML(@cookies[my_cookie_name])
+    serializer = ActiveSupport::MessageEncryptor::NullSerializer
+    key_generator = ActiveSupport::KeyGenerator.new(ENV['SINAI_SECRET_KEY_BASE'], iterations: 1000)
+    key_len = ActiveSupport::MessageEncryptor.key_len(encrypted_cookie_cipher)
+    secret = key_generator.generate_key(ENV['SINAI_SALT'], key_len)
+    encryptor = ActiveSupport::MessageEncryptor.new(secret, cipher: encrypted_cookie_cipher, serializer: serializer)
+    # my_cipher_text          = CGI.unescapeHTML(@cookies[ENV['SINAI_COOKIE_NAME']])
+    my_cipher_text          = @cookies[ENV['SINAI_COOKIE_NAME']]
     @authenticated_details  = encryptor.decrypt_and_verify(my_cipher_text)
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage
+    @authenticated_details = 'failed'
   end
 
   ##

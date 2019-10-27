@@ -39,7 +39,7 @@ describe CustomDelegate do
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        my_cookie_name => Base64.encode64('wrong')
+        my_cookie_name => ''
       }
     }
     expect(delegate.authorize).to eq([false, { 'status_code' => 400 }])
