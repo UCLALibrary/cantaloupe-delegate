@@ -122,13 +122,11 @@ class CustomDelegate
   def check_authenticated_details
     # decrypt our cookies
 
-    my_iv = CGI.unescapeHTML(@cookies['initialization_vector'])
-
     my_cipher_text = CGI.unescapeHTML(@cookies['sinai_authenticated'])
 
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = my_iv
+    decipher.iv = ENV['CIPHER_IV']
     decipher.key = ENV['CIPHER_KEY']
     @authenticated_details = decipher.update(my_cipher_text)
     @authenticated_details << decipher.final
