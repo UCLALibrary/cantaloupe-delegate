@@ -17,11 +17,11 @@ GEM
       concurrent-ruby (~> 1.0)
     java (0.0.2)
     minitest (5.12.2)
-    openssl (2.1.2)
     parallel (1.12.1)
     parser (2.5.3.0)
       ast (~> 2.4.0)
     powerpack (0.1.2)
+    rails_compatible_cookies_utils (0.1.2)
     rainbow (3.0.0)
     rake (12.3.1)
     rspec (3.8.0)
@@ -62,7 +62,7 @@ DEPENDENCIES
   activesupport
   bixby (~> 1.0)
   java
-  openssl
+  rails_compatible_cookies_utils
   rake
   rspec
   rubocop

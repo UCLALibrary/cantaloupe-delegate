@@ -1,14 +1,16 @@
 require 'java'
 require 'delegates'
-require 'openssl'
+require 'rails_compatible_cookies_utils'
 require 'cgi'
-require 'active_support'
-require 'base64'
 
 describe CustomDelegate do
   challenge_url          = 'https://sinai-id.org/users/sign_in'
-  my_escaped_cipher_text = ENV['SINAI_TEST_SESSION_COOKIE']
+  # my_escaped_cipher_text = ENV['SINAI_TEST_SESSION_COOKIE'] #FIXME, make this, don't try to copy from a browser
   my_cookie_name         = ENV['SINAI_COOKIE_NAME']
+
+  cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
+  cookie_value = cookies_utils.encrypt 'authenticated'
+  test_cookie = CGI::Cookie.new 'sinai_authenticated_test', cookie_value
 
   it 'fails to authenticate if cookies are not present' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
@@ -52,7 +54,7 @@ describe CustomDelegate do
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        my_cookie_name => my_escaped_cipher_text
+        my_cookie_name => test_cookie
       }
     }
     expect(delegate.authorize).to be(true)

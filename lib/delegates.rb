@@ -14,8 +14,7 @@
 # versions. It *might* work with Cantaloupe version 5, YMMV
 #
 
-require 'cgi'
-require 'active_support'
+require 'rails_compatible_cookies_utils'
 
 # Cantaloupe CustomDelegate method for customized authentication, and more!
 class CustomDelegate
@@ -113,7 +112,7 @@ class CustomDelegate
     # grab the authenticated_details using the cookies
     check_authenticated_details
 
-    return @result400 unless @authenticated_details[0..12] == my_expected_text
+    return @result400 unless !@authenticated_details.nil? && @authenticated_details[0..12] == my_expected_text
 
     # otherwise, everything is cool, proceed
     true
@@ -121,17 +120,10 @@ class CustomDelegate
 
   def check_authenticated_details
     # decrypt our cookie
-    encrypted_cookie_cipher = 'aes-256-gcm'
-    serializer = ActiveSupport::MessageEncryptor::NullSerializer
-    key_generator = ActiveSupport::KeyGenerator.new(ENV['SINAI_SECRET_KEY_BASE'], iterations: 1000)
-    key_len = ActiveSupport::MessageEncryptor.key_len(encrypted_cookie_cipher)
-    secret = key_generator.generate_key(ENV['SINAI_SALT'], key_len)
-    encryptor = ActiveSupport::MessageEncryptor.new(secret, cipher: encrypted_cookie_cipher, serializer: serializer)
-    # my_cipher_text          = CGI.unescapeHTML(@cookies[ENV['SINAI_COOKIE_NAME']])
+
+    cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
     my_cipher_text          = @cookies[ENV['SINAI_COOKIE_NAME']]
-    @authenticated_details  = encryptor.decrypt_and_verify(my_cipher_text)
-  rescue ActiveSupport::MessageEncryptor::InvalidMessage
-    @authenticated_details = 'failed'
+    @authenticated_details  = cookies_utils.decrypt_cookie_key my_cipher_text, 'sinai_authenticated_test'
   end
 
   ##
