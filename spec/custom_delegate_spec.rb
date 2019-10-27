@@ -1,7 +1,6 @@
 require 'java'
 require 'delegates'
 require 'rails_compatible_cookies_utils'
-require 'cgi'
 
 describe CustomDelegate do
   challenge_url          = 'https://sinai-id.org/users/sign_in'
@@ -10,7 +9,7 @@ describe CustomDelegate do
 
   cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
   cookie_value = cookies_utils.encrypt 'authenticated'
-  test_cookie = CGI::Cookie.new 'sinai_authenticated_test', cookie_value
+  test_cookie = cookie_value
 
   it 'fails to authenticate if cookies are not present' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
