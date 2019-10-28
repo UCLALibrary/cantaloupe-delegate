@@ -8,7 +8,9 @@ describe CustomDelegate do
   my_cookie_name         = ENV['SINAI_COOKIE_NAME']
 
   cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
-  cookie_value = cookies_utils.encrypt 'authenticated'
+  mock_session = {}
+  mock_session[:sinai_authenticated_test] = 'authenticated'
+  cookie_value = cookies_utils.encrypt mock_session
   test_cookie = cookie_value
 
   it 'fails to authenticate if cookies are not present' do
