@@ -6,7 +6,7 @@ require 'cgi'
 describe CustomDelegate do
   challenge_url = 'https://sinai-id.org/users/sign_in'
   # we need some fake secrets to test our cookie handling, let's make some
-  todays_date = 'today'
+  # todays_date = 'today'
   cipher = OpenSSL::Cipher::AES256.new :CBC
   cipher.encrypt
   my_iv = ENV['CIPHER_IV']
@@ -15,7 +15,8 @@ describe CustomDelegate do
   # cipher.key = OpenSSL::Random.random_bytes(32)
   cipher.key = ENV['CIPHER_KEY']
   cipher.iv = my_iv
-  my_cipher_text = cipher.update("Authenticated #{todays_date}") + cipher.final
+  # my_cipher_text = cipher.update("Authenticated #{todays_date}") + cipher.final
+  my_cipher_text = ENV['CIPHER_TEXT']
   my_escaped_cipher_text = CGI.escapeHTML(my_cipher_text)
 
   it 'fails to authenticate if cookies are not present' do
