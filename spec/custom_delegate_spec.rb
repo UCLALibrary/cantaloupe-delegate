@@ -9,10 +9,12 @@ describe CustomDelegate do
   todays_date = 'today'
   cipher = OpenSSL::Cipher::AES256.new :CBC
   cipher.encrypt
-  my_iv = cipher.random_iv
-  my_escaped_iv = CGI.escapeHTML(my_iv)
+  my_iv = ENV['CIPHER_IV']
+  # TODO: there will probably be some more that needs to be done to the IV so we can use it "text" do
+
   # cipher.key = OpenSSL::Random.random_bytes(32)
   cipher.key = ENV['CIPHER_KEY']
+  cipher.iv = my_iv
   my_cipher_text = cipher.update("Authenticated #{todays_date}") + cipher.final
   my_escaped_cipher_text = CGI.escapeHTML(my_cipher_text)
 
@@ -58,7 +60,7 @@ describe CustomDelegate do
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        'initialization_vector' => my_escaped_iv,
+        'initialization_vector' => my_iv,
         'sinai_authenticated' => my_escaped_cipher_text
       }
     }

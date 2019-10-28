@@ -122,7 +122,7 @@ class CustomDelegate
   def check_authenticated_details
     # decrypt our cookies
 
-    my_iv = CGI.unescapeHTML(@cookies['initialization_vector'])
+    my_iv = @cookies['initialization_vector']
 
     my_cipher_text = CGI.unescapeHTML(@cookies['sinai_authenticated'])
 
