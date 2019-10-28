@@ -1,6 +1,7 @@
 require 'java'
 require 'delegates'
 require 'rails_compatible_cookies_utils'
+require 'byebug'
 
 describe CustomDelegate do
   challenge_url          = 'https://sinai-id.org/users/sign_in'
@@ -8,6 +9,7 @@ describe CustomDelegate do
   my_cookie_name         = ENV['SINAI_COOKIE_NAME']
 
   cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
+
   mock_session = {}
   mock_session[:sinai_authenticated_test] = 'authenticated'
   cookie_value = cookies_utils.encrypt mock_session

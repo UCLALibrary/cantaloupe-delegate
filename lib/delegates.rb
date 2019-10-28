@@ -15,6 +15,7 @@
 #
 
 require 'rails_compatible_cookies_utils'
+require 'byebug'
 
 # Cantaloupe CustomDelegate method for customized authentication, and more!
 class CustomDelegate
@@ -123,7 +124,7 @@ class CustomDelegate
 
     cookies_utils = RailsCompatibleCookiesUtils.new ENV['SINAI_SECRET_KEY_BASE']
     my_cipher_text          = @cookies[ENV['SINAI_COOKIE_NAME']]
-    @authenticated_details  = cookies_utils.decrypt_cookie_key my_cipher_text, 'sinai_authenticated_test'
+    @authenticated_details  = cookies_utils.decrypt_cookie_key my_cipher_text, ':sinai_authenticated_test'
   end
 
   ##
