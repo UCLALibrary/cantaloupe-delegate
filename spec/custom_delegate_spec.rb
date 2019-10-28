@@ -1,20 +1,23 @@
+# frozen_string_literal: true
+
 require 'java'
 require 'delegates'
 require 'openssl'
 require 'cgi'
 
 describe CustomDelegate do
+  # Testing setup...
+
   challenge_url = 'https://sinai-id.org/users/sign_in'
-  # we need some fake secrets to test our cookie handling, let's make some
-  todays_date = 'today'
+  iv = 'abcdefghijklmnop'
   cipher = OpenSSL::Cipher::AES256.new :CBC
   cipher.encrypt
-  my_iv = cipher.random_iv
-  my_escaped_iv = CGI.escapeHTML(my_iv)
-  # cipher.key = OpenSSL::Random.random_bytes(32)
   cipher.key = ENV['CIPHER_KEY']
-  my_cipher_text = cipher.update("Authenticated #{todays_date}") + cipher.final
-  my_escaped_cipher_text = CGI.escapeHTML(my_cipher_text)
+  cipher.iv = iv
+  cipher_text = cipher.update(ENV['CIPHER_TEXT'] + ' random stuff') + cipher.final
+  auth_cookie_value = cipher_text.unpack('H*')[0].upcase
+
+  # Now the tests begin...
 
   it 'fails to authenticate if cookies are not present' do
     uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
@@ -45,7 +48,7 @@ describe CustomDelegate do
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        'sinai_authenticated' => my_escaped_cipher_text
+        'sinai_authenticated' => auth_cookie_value
       }
     }
     expect(delegate.authorize).to eq([false, { 'challenge' => challenge_url, 'status_code' => 401 }])
@@ -58,8 +61,8 @@ describe CustomDelegate do
       'request_uri' => uri,
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       :cookies => {
-        'initialization_vector' => my_escaped_iv,
-        'sinai_authenticated' => my_escaped_cipher_text
+        'initialization_vector' => iv,
+        'sinai_authenticated' => auth_cookie_value
       }
     }
     expect(delegate.authorize).to be(true)
