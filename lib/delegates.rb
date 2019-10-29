@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ##
 # Ruby delegate script for Sinai Cantaloupe
 #
@@ -98,9 +100,9 @@ class CustomDelegate
   #
   def authorize(_options = {})
     @challenge_url = 'https://sinai-id.org/users/sign_in'
-    # if the required cookies are not present, return a 401 error
     @cookies = context[:cookies]
-    my_expected_text = 'Authenticated'
+
+    # if the required cookies are not present, return a 401 error
     @result401 = [false, { 'status_code' => 401, 'challenge' => @challenge_url }]
     @result400 = [false, { 'status_code' => 400 }]
 
@@ -110,28 +112,21 @@ class CustomDelegate
     # also fail fast if we don't have the cookies we need
     return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
 
-    # grab the authenticated_details using the cookies
-    check_authenticated_details
-
-    return @result400 unless @authenticated_details[0..12] == my_expected_text
+    # check the auth details
+    return @result400 unless cookie_authentication.start_with?(ENV['CIPHER_TEXT'])
 
     # otherwise, everything is cool, proceed
     true
   end
 
-  def check_authenticated_details
-    # decrypt our cookies
-
-    my_iv = CGI.unescapeHTML(@cookies['initialization_vector'])
-
-    my_cipher_text = CGI.unescapeHTML(@cookies['sinai_authenticated'])
-
+  def cookie_authentication
+    cipher_text = @cookies['sinai_authenticated']
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = my_iv
+    decipher.iv = @cookies['initialization_vector']
     decipher.key = ENV['CIPHER_KEY']
-    @authenticated_details = decipher.update(my_cipher_text)
-    @authenticated_details << decipher.final
+    auth_cookie = [cipher_text].pack('H*').unpack('C*').pack('c*')
+    decipher.update(auth_cookie) + decipher.final
   end
 
   ##

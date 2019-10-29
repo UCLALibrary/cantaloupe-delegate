@@ -1,5 +1,4 @@
-ENV['FEDORA_URL'] = 'http://localhost:8984/fcrepo/rest'
-ENV['FEDORA_BASE_PATH'] = '/prod'
+# frozen_string_literal: true
 
 require 'rake'
 require 'rspec/core/rake_task'
