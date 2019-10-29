@@ -11,3 +11,6 @@ jdk:
   - oraclejdk8
 rvm:
   - jruby
+branches:
+  only:
+  - master
