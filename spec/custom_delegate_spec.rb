@@ -67,4 +67,18 @@ describe CustomDelegate do
     }
     expect(delegate.authorize).to be(true)
   end
+
+  it 'returns the expected source (S3Source)' do
+    uri = 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg'
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => uri,
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      :cookies => {
+        'initialization_vector' => iv,
+        'sinai_authenticated' => auth_cookie_value
+      }
+    }
+    expect(delegate.source).to eq('S3Source')
+  end
 end
