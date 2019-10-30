@@ -160,7 +160,10 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(options = {}); end
+  def source(_options = {})
+    # we will always be using S3 as a source, yo
+    'S3Source'
+  end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
