@@ -99,27 +99,29 @@ class CustomDelegate
   # @return [Boolean,Hash<String,Object>] See above.
   #
   def authorize(_options = {})
-    @challenge_url = 'https://sinai-id.org/users/sign_in'
-    @cookies = context[:cookies]
+    # Fun, fun... our Cantaloupe docker container likes it one way, our dev machines another
+    @cookies = context['cookies']
+    @cookies = context[:cookies] if @cookies.nil?
 
-    # if the required cookies are not present, return a 401 error
-    @result401 = [false, { 'status_code' => 401, 'challenge' => @challenge_url }]
-    @result400 = [false, { 'status_code' => 400 }]
+    # Our important cookie names
+    iv = 'initialization_vector'
+    auth = 'sinai_authenticated'
 
-    # fail fast if the cookies hash is nil (i.e. no cookie at all)
-    return @result401 if @cookies.nil?
-
-    # also fail fast if we don't have the cookies we need
-    return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
-
-    # check the auth details
-    return @result400 unless cookie_authentication.start_with?(ENV['CIPHER_TEXT'])
-
-    # otherwise, everything is cool, proceed
-    true
+    # Check whether we're authorized to view the requested item
+    if image_request?
+      @cookies.key?(iv) && @cookies.key?(auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
+    else
+      true
+    end
   end
 
-  def cookie_authentication
+  # Check whether a request is an image or info.json request
+  def image_request?
+    !context['request_uri'].end_with?('.json')
+  end
+
+  # Check the authentication value in the expected auth cookie
+  def auth_value
     cipher_text = @cookies['sinai_authenticated']
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
@@ -160,7 +162,9 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(options = {}); end
+  def source(_options = {})
+    'S3Source'
+  end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`
