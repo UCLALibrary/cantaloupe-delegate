@@ -1,6 +1,6 @@
 # cantaloupe-delegate &nbsp;[![Build Status](https://travis-ci.org/UCLALibrary/cantaloupe-delegate.svg?branch=master)](https://travis-ci.org/UCLALibrary/cantaloupe-delegate)
 
-A delegate script for the Cantaloupe IIIF server that takes a Hyrax file ID returns a Fedora URL.
+A delegate script for the Cantaloupe IIIF server that serves images from an S3 bucket.
 
 ### Running tests
 
