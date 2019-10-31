@@ -99,9 +99,7 @@ class CustomDelegate
   # @return [Boolean,Hash<String,Object>] See above.
   #
   def authorize(_options = {})
-    # Fun, fun... our Cantaloupe docker container likes it one way, our dev machines another
     @cookies = context['cookies']
-    @cookies = context[:cookies] if @cookies.nil?
 
     # Our important cookie names
     iv = 'initialization_vector'

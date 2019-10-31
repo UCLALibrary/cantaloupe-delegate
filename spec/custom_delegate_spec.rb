@@ -16,6 +16,7 @@ describe CustomDelegate do
   cipher_text = cipher.update(ENV['CIPHER_TEXT'] + ' random stuff') + cipher.final
   auth_cookie_value = cipher_text.unpack('H*')[0].upcase
 
+  puts auth_cookie_value
   # Now the testing begins...
 
   it 'passes if the requested item is an info.json file' do
@@ -32,7 +33,7 @@ describe CustomDelegate do
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      :cookies => { 'nope' => 0 }
+      'cookies' => { 'nope' => 0 }
     }
     expect(delegate.authorize).to eq(false)
   end
@@ -42,21 +43,34 @@ describe CustomDelegate do
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      :cookies => {
+      'cookies' => {
         'sinai_authenticated' => auth_cookie_value
       }
     }
     expect(delegate.authorize).to eq(false)
   end
 
-  it 'passes if we send the necessary cookies with acceptible values' do
+  it 'passes if we send the necessary computed cookies with acceptable values' do
     delegate = described_class.new
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      :cookies => {
+      'cookies' => {
         'initialization_vector' => iv,
         'sinai_authenticated' => auth_cookie_value
+      }
+    }
+    expect(delegate.authorize).to be(true)
+  end
+
+  it 'passes if we send the necessary cookies with acceptable values' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'cookies' => {
+        'initialization_vector' => iv,
+        'sinai_authenticated' => 'D4B197B706847D941E2232E7882258B2A71EC589A02A8F957AD5BAEBECB0528E'
       }
     }
     expect(delegate.authorize).to be(true)
@@ -67,7 +81,7 @@ describe CustomDelegate do
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      :cookies => {
+      'cookies' => {
         'initialization_vector' => iv,
         'sinai_authenticated' => auth_cookie_value
       }
