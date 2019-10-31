@@ -99,31 +99,47 @@ class CustomDelegate
   # @return [Boolean,Hash<String,Object>] See above.
   #
   def authorize(_options = {})
-    @challenge_url = 'https://sinai-id.org/users/sign_in'
-    @cookies = context[:cookies]
+    @cookies = context['cookies']
 
-    # if the required cookies are not present, return a 401 error
-    @result401 = [false, { 'status_code' => 401, 'challenge' => @challenge_url }]
-    @result400 = [false, { 'status_code' => 400 }]
+    # Our important cookie names
+    @iv = 'initialization_vector'
+    @auth = 'sinai_authenticated'
 
-    # fail fast if the cookies hash is nil (i.e. no cookie at all)
-    return @result401 if @cookies.nil?
+    # If we have just the raw cookies header, parse it into cookies
+    parse_cookies if @cookies&.key?('Cookie')
 
-    # also fail fast if we don't have the cookies we need
-    return @result401 unless @cookies.key?('initialization_vector') && @cookies.key?('sinai_authenticated')
-
-    # check the auth details
-    return @result400 unless cookie_authentication.start_with?(ENV['CIPHER_TEXT'])
-
-    # otherwise, everything is cool, proceed
-    true
+    # Check whether we're authorized to view the requested item
+    if image_request?
+      @cookies&.key?(@iv) && @cookies&.key?(@auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
+    else
+      true
+    end
   end
 
-  def cookie_authentication
-    cipher_text = @cookies['sinai_authenticated']
+  # If we don't have nicely parsed cookies in our context, parse them ourselves
+  def parse_cookies
+    cookie_hash = {}
+    raw_value = @cookies['Cookie']
+    values = raw_value.split(';')
+    values.each do |item|
+      item.strip! if item.respond_to? :strip!
+      parts = item.split('=')
+      cookie_hash[parts[0]] = parts[1]
+    end
+    @cookies = cookie_hash
+  end
+
+  # Check whether a request is an image or info.json request
+  def image_request?
+    !context['request_uri'].end_with?('.json')
+  end
+
+  # Check the authentication value in the expected auth cookie
+  def auth_value
+    cipher_text = @cookies[@auth]
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = @cookies['initialization_vector']
+    decipher.iv = @cookies[@iv]
     decipher.key = ENV['CIPHER_KEY']
     auth_cookie = [cipher_text].pack('H*').unpack('C*').pack('c*')
     decipher.update(auth_cookie) + decipher.final
@@ -160,7 +176,9 @@ class CustomDelegate
   # @param options [Hash] Empty hash.
   # @return [String] Source name.
   #
-  def source(options = {}); end
+  def source(_options = {})
+    'S3Source'
+  end
 
   ##
   # N.B.: this method should not try to perform authorization. `authorize()`

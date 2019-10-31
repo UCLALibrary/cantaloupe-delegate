@@ -1,6 +1,6 @@
 require: rubocop-rspec
 
-LineLength:
+Metrics/LineLength:
   Max: 120
 
 # See https://github.com/rubocop-hq/rubocop/issues/6410
@@ -36,3 +36,6 @@ RSpec/DescribeClass:
 RSpec/NestedGroups:
   Exclude:
     - 'spec/*'
+
+AllCops:
+  TargetRubyVersion: 2.5
