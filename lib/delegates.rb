@@ -105,12 +105,28 @@ class CustomDelegate
     iv = 'initialization_vector'
     auth = 'sinai_authenticated'
 
+    # If we have just the raw cookies header, parse it into cookies
+    parse_cookies if @cookies&.key?('Cookie')
+
     # Check whether we're authorized to view the requested item
     if image_request?
-      @cookies.key?(iv) && @cookies.key?(auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
+      @cookies&.key?(iv) && @cookies&.key?(auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
     else
       true
     end
+  end
+
+  # If we don't have nicely parsed cookies in our context, parse them ourselves
+  def parse_cookies
+    cookie_hash = {}
+    raw_value = @cookies['Cookie']
+    values = raw_value.split(';')
+    values.each do |item|
+      item.strip! if item.respond_to? :strip!
+      parts = item.split('=')
+      cookie_hash[parts[0]] = parts[1]
+    end
+    @cookies = cookie_hash
   end
 
   # Check whether a request is an image or info.json request

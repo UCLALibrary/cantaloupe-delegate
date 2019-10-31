@@ -76,6 +76,20 @@ describe CustomDelegate do
     expect(delegate.authorize).to be(true)
   end
 
+  it 'passes if we send the raw cookie string with acceptable values' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'cookies' =>
+        {
+          'Cookie' => 'initialization_vector=abcdefghijklmnop; ' \
+            'sinai_authenticated=D4B197B706847D941E2232E7882258B2A71EC589A02A8F957AD5BAEBECB0528E'
+        }
+    }
+    expect(delegate.authorize).to be(true)
+  end
+
   it 'passes if delegate source is set to S3Source' do
     delegate = described_class.new
     delegate.context = {
