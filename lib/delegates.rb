@@ -102,15 +102,15 @@ class CustomDelegate
     @cookies = context['cookies']
 
     # Our important cookie names
-    iv = 'initialization_vector'
-    auth = 'sinai_authenticated'
+    @iv = 'initialization_vector'
+    @auth = 'sinai_authenticated'
 
     # If we have just the raw cookies header, parse it into cookies
     parse_cookies if @cookies&.key?('Cookie')
 
     # Check whether we're authorized to view the requested item
     if image_request?
-      @cookies&.key?(iv) && @cookies&.key?(auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
+      @cookies&.key?(@iv) && @cookies&.key?(@auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
     else
       true
     end
@@ -136,10 +136,10 @@ class CustomDelegate
 
   # Check the authentication value in the expected auth cookie
   def auth_value
-    cipher_text = @cookies['sinai_authenticated']
+    cipher_text = @cookies[@auth]
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = @cookies['initialization_vector']
+    decipher.iv = @cookies[@iv]
     decipher.key = ENV['CIPHER_KEY']
     auth_cookie = [cipher_text].pack('H*').unpack('C*').pack('c*')
     decipher.update(auth_cookie) + decipher.final
