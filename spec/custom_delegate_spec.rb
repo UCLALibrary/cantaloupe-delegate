@@ -16,7 +16,6 @@ describe CustomDelegate do
   cipher_text = cipher.update(ENV['CIPHER_TEXT'] + ' random stuff') + cipher.final
   auth_cookie_value = cipher_text.unpack('H*')[0].upcase
 
-  puts auth_cookie_value
   # Now the testing begins...
 
   it 'passes if the requested item is an info.json file' do
