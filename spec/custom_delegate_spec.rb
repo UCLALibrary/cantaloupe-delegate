@@ -14,7 +14,7 @@ describe CustomDelegate do
   cipher.key = ENV['CIPHER_KEY']
   cipher.iv = iv
   cipher_text = cipher.update(ENV['CIPHER_TEXT'] + ' random stuff') + cipher.final
-  auth_cookie_value = cipher_text.unpack('H*')[0].upcase
+  auth_cookie_value = cipher_text.unpack1('H*').upcase
 
   # Now the testing begins...
 

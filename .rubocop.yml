@@ -36,3 +36,6 @@ RSpec/DescribeClass:
 RSpec/NestedGroups:
   Exclude:
     - 'spec/*'
+
+AllCops:
+  TargetRubyVersion: 2.5
