@@ -136,12 +136,12 @@ class CustomDelegate
 
   # Check the authentication value in the expected auth cookie
   def auth_value
-    cipher_text = @cookies[@auth]
     decipher = OpenSSL::Cipher::AES256.new :CBC
     decipher.decrypt
-    decipher.iv = @cookies[@iv]
+    iv_cookie = [@cookies[@iv]].pack('H*').unpack('C*').pack('c*')
+    decipher.iv = iv_cookie
     decipher.key = ENV['CIPHER_KEY']
-    auth_cookie = [cipher_text].pack('H*').unpack('C*').pack('c*')
+    auth_cookie = [@cookies[@auth]].pack('H*').unpack('C*').pack('c*')
     decipher.update(auth_cookie) + decipher.final
   end
 
