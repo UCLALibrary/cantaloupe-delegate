@@ -28,6 +28,26 @@ describe CustomDelegate do
     expect(delegate.authorize).to eq(true)
   end
 
+  it 'passes if the request is coming from a known IP address' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'client_ip' => '52.32.59.248'
+    }
+    expect(delegate.authorize).to eq(true)
+  end
+
+  it 'fails to authenticate if the request is coming from an unknown IP address' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'client_ip' => '52.32.59.249'
+    }
+    expect(delegate.authorize).to eq(false)
+  end
+
   it 'fails to authenticate if only an irrelevant cookie is passed' do
     delegate = described_class.new
     delegate.context = {
