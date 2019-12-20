@@ -118,13 +118,17 @@ class CustomDelegate
   end
 
   def ip_okay?
-    ips = Set.new
+    headers = context['request_headers']
+    xforwardedfor = headers['X-Forwarded-For'] if headers
 
+    return unless xforwardedfor
+
+    ip = xforwardedfor.split(',').map(&:strip).last
+    ips = Set.new
     ips << '52.32.59.248'
     ips << '54.201.202.237'
     ips << '47.134.162.230'
-
-    ips.include?(context['client_ip'])
+    ips.include?(ip)
   end
 
   # If we don't have nicely parsed cookies in our context, parse them ourselves

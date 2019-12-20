@@ -28,22 +28,46 @@ describe CustomDelegate do
     expect(delegate.authorize).to eq(true)
   end
 
-  it 'passes if the request is coming from a known IP address' do
+  # The assumption here is that ALB is setting the header and cantaloupe can't be accessed directly
+  it 'passes if the only IP in X-Forwarded-For is an expected one' do
     delegate = described_class.new
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      'client_ip' => '52.32.59.248'
+      'request_headers' => { 'X-Forwarded-For' => '52.32.59.248' }
     }
     expect(delegate.authorize).to eq(true)
   end
 
-  it 'fails to authenticate if the request is coming from an unknown IP address' do
+  # The assumption here is that ALB is setting the header and cantaloupe can't be accessed directly
+  it 'passes if the first IP in X-Forwarded-For is an expected one' do
     delegate = described_class.new
     delegate.context = {
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
-      'client_ip' => '52.32.59.249'
+      'request_headers' => { 'X-Forwarded-For' => '52.32.59.249, 52.32.59.248' }
+    }
+    expect(delegate.authorize).to eq(true)
+  end
+
+  # The assumption here is that ALB is setting the header and cantaloupe can't be accessed directly
+  it 'fails if the only IP in X-Forwarded-For is not an expected one' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'request_headers' => { 'X-Forwarded-For' => '52.32.59.249' }
+    }
+    expect(delegate.authorize).to eq(false)
+  end
+
+  # The assumption here is that ALB is setting the header and cantaloupe can't be accessed directly
+  it 'fails if the first IP in X-Forwarded-For is not an expected one' do
+    delegate = described_class.new
+    delegate.context = {
+      'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
+      'full_size' => { 'width' => '1024', 'height' => '1024' },
+      'request_headers' => { 'X-Forwarded-For' => '52.32.59.248, 52.32.59.249' }
     }
     expect(delegate.authorize).to eq(false)
   end

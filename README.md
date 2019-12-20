@@ -39,3 +39,11 @@ While not needed to run the tests (those are self-contained), to start UCLA's [C
       --name melon -v /sinai:/imageroot uclalibrary/cantaloupe:4.1.4
 
 The above configuration would be used to configure an S3 backend. A different configuration could be used to configure a file system backend.
+
+### Assumptions about IP access
+
+This version of the delegate assumes Cantaloupe is running behind the Amazon Load Balancer (ALB). This is because it relies on the 'X-Forwarded-For header' for authentication, which is easy to spoof if access to Cantaloupe isn't restricted to ALB connections. If not running behind the ALB, the IP check code in this delegate should be removed.
+
+### Contact
+
+Feel free to send any questions, suggestions, or bug reports to this project's [issues queue](https://github.com/UCLALibrary/cantaloupe-delegate/issues).
