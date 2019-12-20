@@ -18,6 +18,7 @@
 
 require 'openssl'
 require 'cgi'
+require 'set'
 
 # Cantaloupe CustomDelegate method for customized authentication, and more!
 class CustomDelegate
@@ -110,10 +111,24 @@ class CustomDelegate
 
     # Check whether we're authorized to view the requested item
     if image_request?
-      @cookies&.key?(@iv) && @cookies&.key?(@auth) && auth_value.start_with?(ENV['CIPHER_TEXT'])
+      ip_okay? | (@cookies&.key?(@iv) && @cookies&.key?(@auth) && auth_value.start_with?(ENV['CIPHER_TEXT']))
     else
       true
     end
+  end
+
+  def ip_okay?
+    headers = context['request_headers']
+    xforwardedfor = headers['X-Forwarded-For'] if headers
+
+    return unless xforwardedfor
+
+    ip = xforwardedfor.split(',').map(&:strip).last
+    ips = Set.new
+    ips << '52.32.59.248'
+    ips << '54.201.202.237'
+    ips << '47.134.162.230'
+    ips.include?(ip)
   end
 
   # If we don't have nicely parsed cookies in our context, parse them ourselves
