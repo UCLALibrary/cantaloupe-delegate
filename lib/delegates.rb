@@ -128,6 +128,7 @@ class CustomDelegate
     ips << '52.32.59.248'
     ips << '54.201.202.237'
     ips << '47.134.162.230'
+    ips << '44.231.209.229'
     ips.include?(ip)
   end
 
