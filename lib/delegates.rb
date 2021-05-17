@@ -104,7 +104,7 @@ class CustomDelegate
 
     # Our important cookie names
     @iv = 'initialization_vector'
-    @auth = 'sinai_authenticated'
+    @auth = 'sinai_authenticated_3day'
 
     # If we have just the raw cookies header, parse it into cookies
     parse_cookies if @cookies&.key?('Cookie')
