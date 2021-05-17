@@ -1,7 +1,7 @@
 require: rubocop-rspec
 
 Metrics/LineLength:
-  Max: 120
+  Max: 125
 
 # See https://github.com/rubocop-hq/rubocop/issues/6410
 Layout/AlignHash:

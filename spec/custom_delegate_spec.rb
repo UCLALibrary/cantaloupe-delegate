@@ -114,8 +114,7 @@ describe CustomDelegate do
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       'cookies' =>
         {
-          'Cookie' => 'initialization_vector=' + iv_cookie_value + '; ' + 'sinai_authenticated_3day='
-            + auth_cookie_value
+          'Cookie' => 'initialization_vector=' + iv_cookie_value + '; ' + 'sinai_authenticated_3day=' + auth_cookie_value
         }
     }
     expect(delegate.authorize).to be(true)
