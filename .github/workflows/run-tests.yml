@@ -1,0 +1,25 @@
+name: Tests & Code Style
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
+        ruby: [ jruby, jruby-head ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2
+      - name: Set up Ruby (${{ matrix.ruby }})
+        uses: ruby/setup-ruby@5e4f0a10bfc39c97cd5358121291e27e5d97e09b # v1.82.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+          # By default, if there is a Gemfile.lock file (or $BUNDLE_GEMFILE.lock or gems.locked)
+          # with a BUNDLED WITH section, that version of Bundler will be installed and used.
+      - name: Run tests and linter
+        run: bundle exec rake
