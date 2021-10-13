@@ -22,3 +22,6 @@ jobs:
           # with a BUNDLED WITH section, that version of Bundler will be installed and used.
       - name: Run tests and linter
         run: bundle exec rake
+        env:
+          CIPHER_KEY: ThisPasswordIsReallyHardToGuess!
+          CIPHER_TEXT: Authenticated
