@@ -8,7 +8,6 @@ jobs:
   test:
     strategy:
       matrix:
-        # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
         ruby: [ jruby, jruby-head ]
     runs-on: ubuntu-latest
     steps:
