@@ -1,4 +1,5 @@
-# cantaloupe-delegate &nbsp;[![Build Status](https://travis-ci.org/UCLALibrary/cantaloupe-delegate.svg?branch=master)](https://travis-ci.org/UCLALibrary/cantaloupe-delegate)
+# cantaloupe-delegate
+[![build status](https://github.com/uclalibrary/cantaloupe-delegate/workflows/Tests%20%26%20Code%20Style/badge.svg)](https://github.com/UCLALibrary/cantaloupe-delegate/actions)
 
 A delegate script for the Cantaloupe IIIF server that serves images from an S3 bucket.
 
@@ -11,8 +12,8 @@ Cantaloupe uses JRuby to evaluate its delegate. I've found JRuby installed direc
 
 If you install JRuby in another way, you may need to run the following commands instead:
 
-   jruby -S bundle install
-   jruby -S bundle exec rake
+    jruby -S bundle install
+    jruby -S bundle exec rake
 
 ### Running Cantaloupe
 
