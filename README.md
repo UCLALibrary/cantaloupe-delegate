@@ -12,8 +12,8 @@ Cantaloupe uses JRuby to evaluate its delegate. I've found JRuby installed direc
 
 If you install JRuby in another way, you may need to run the following commands instead:
 
-   jruby -S bundle install
-   jruby -S bundle exec rake
+    jruby -S bundle install
+    jruby -S bundle exec rake
 
 ### Running Cantaloupe
 
