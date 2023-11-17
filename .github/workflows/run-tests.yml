@@ -8,7 +8,7 @@ jobs:
   test:
     strategy:
       matrix:
-        ruby: [ jruby, jruby-head ]
+        ruby: [ jruby ]
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
