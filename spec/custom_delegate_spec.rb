@@ -88,7 +88,7 @@ describe CustomDelegate do
       'request_uri' => 'http://example.org/iiif/asdfasdf/full/pct:70/0/default.jpg',
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       'cookies' => {
-        'sinai_authenticated_3day' => auth_cookie_value
+        'sinai_authenticated_1year' => auth_cookie_value
       }
     }
     expect(delegate.authorize).to eq(false)
@@ -101,7 +101,7 @@ describe CustomDelegate do
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       'cookies' => {
         'initialization_vector' => iv_cookie_value,
-        'sinai_authenticated_3day' => auth_cookie_value
+        'sinai_authenticated_1year' => auth_cookie_value
       }
     }
     expect(delegate.authorize).to be(true)
@@ -114,7 +114,7 @@ describe CustomDelegate do
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       'cookies' =>
         {
-          'Cookie' => 'initialization_vector=' + iv_cookie_value + '; ' + 'sinai_authenticated_3day=' + auth_cookie_value
+          'Cookie' => 'initialization_vector=' + iv_cookie_value + '; ' + 'sinai_authenticated_1year=' + auth_cookie_value
         }
     }
     expect(delegate.authorize).to be(true)
@@ -127,7 +127,7 @@ describe CustomDelegate do
       'full_size' => { 'width' => '1024', 'height' => '1024' },
       'cookies' => {
         'initialization_vector' => iv_cookie_value,
-        'sinai_authenticated_3day' => auth_cookie_value
+        'sinai_authenticated_1year' => auth_cookie_value
       }
     }
     expect(delegate.source).to be('S3Source')
